@@ -1,0 +1,178 @@
+threaded attempt
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+#include "graphics.h"
+
+//globals
+int number = 10; //number of threads
+HANDLE semsem; //name of the semaphore
+HANDLE events[10];
+
+int sizeX = 600;
+int sizeY = 400;
+float zoom = 1;
+double Xcenter = -.5;
+long double Ycenter = 0;
+
+int t = 0;
+
+void onclick(int x, int y) {
+     int a;
+     int b;
+     
+     Xcenter = 3/zoom*x/(1.00*sizeX) - 1.5/zoom + Xcenter;
+     Ycenter = 1/zoom + Ycenter - 2/zoom*y/(1.00*sizeY);
+     zoom *= 4;
+     printf ("Zoom: %g \n", zoom);
+     printf ("X coord: %g \n", Xcenter);
+     printf ("Y coord: %g \n\n", Ycenter);
+
+}
+     
+DWORD draw(int n) { // n = which thread it is
+     //defines
+     int x; 
+     int y;
+     
+     int startY; 
+     
+     int count;
+     
+     long double  cr;
+     long double  ci;
+     long double  zr;
+     long double  zi;
+     long double  zrTemp;
+     long double  ziTemp;
+     
+     while (1==1) {
+           
+           WaitForSingleObject (semsem, INFINITE); //waits for semsem to not = zero 
+           
+           startY = n*sizeY/number; // starting Y value, 
+     
+          //calculating
+          for (y = startY; y < startY + sizeY/number; y ++) {
+              for (x = 0; x < sizeX; x++) {
+                  //setting C and Z based on pixel
+                  // C and Z are complex numbers
+                  // C = cr + ci*i 
+                  // Z = zr + zi*i
+                  cr = 3/zoom*x/(1.00*sizeX) - 1.5/zoom + Xcenter;
+                  ci = 2/zoom*y/(1.00*sizeY) - 1/zoom + Ycenter;
+                  zr = cr;
+                  zi = ci;
+              
+                  //determining color based on escape speed
+                  count = 0;
+                  while (((zr*zr+zi*zi) < 4) && (count < 255)) {
+                        // z = z^2 + c
+                        zrTemp = zr*zr - zi*zi + cr;
+                        ziTemp = 2*zr*zi + ci;
+                        zr = zrTemp;
+                        zi = ziTemp;
+                        count ++; 
+                  }
+                  //printing
+                  pixels[3*(x+y*sizeX) + 0] = 0;
+                  pixels[3*(x+y*sizeX) + 1] = 0;
+                  pixels[3*(x+y*sizeX) + 2] = count;
+              }    
+         }
+         
+         SetEvent (events[n]); // sets event to true 
+     }
+     return 0;
+}
+
+void display() {
+     
+     ReleaseSemaphore (semsem, number, NULL); // sets the semaphore back to full
+     
+     WaitForMultipleObjects (number, events, TRUE, INFINITE); // waits for all events in array to be true
+     //then sets them all back to false 
+     
+     
+     /*//defines
+     int x;
+     int y = sizeY - t%sizeY - 1;
+     int i;
+     int in;
+     int count;
+     
+     long double  cr;
+     long double  ci;
+     long double  zr;
+     long double  zi;
+     long double  zrTemp;
+     long double  ziTemp;
+     
+     //calculating
+     for (y = t%sizeY; y < t%sizeY + 5; y ++) {
+          for (x = 0; x < sizeX; x++) {
+              //setting C and Z based on pixel
+              // C and Z are complex numbers
+              // C = cr + ci*i 
+              // Z = zr + zi*i
+              cr = 3/zoom*x/(1.00*sizeX) - 1.5/zoom + Xcenter;
+              ci = 2/zoom*y/(1.00*sizeY) - 1/zoom + Ycenter;
+              zr = cr;
+              zi = ci;
+              
+              //determining color based on escape speed
+              count = 0;
+              while (((zr*zr+zi*zi) < 4) && (count < 255)) {
+                    // z = z^2 + c
+                    zrTemp = zr*zr - zi*zi + cr;
+                    ziTemp = 2*zr*zi + ci;
+                    zr = zrTemp;
+                    zi = ziTemp;
+                    count ++; 
+              }
+
+              pixels[3*(x+y*sizeX) + 0] = 0;
+              pixels[3*(x+y*sizeX) + 1] = 0;
+              pixels[3*(x+y*sizeX) + 2] = count;
+              
+         }
+     }
+
+     //marking center of the screen
+     for (x = sizeX/2 -1; x < sizeX/2 +2; x++) {
+         for (y = sizeY/2 -1; y < sizeY/2 +2; y++) {
+             pixels[3*(x+y*sizeX) + 0] = 255;
+             pixels[3*(x+y*sizeX) + 1] = 0;
+             pixels[3*(x+y*sizeX) + 2] = 0;
+         }
+     }
+     t += 5; */
+}
+
+int WINAPI WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lpszArgument, int nCmdShow) {
+    //creating threads
+    HANDLE threads[number];
+    int n;
+    for (n = 0; n < number; n++) {
+        threads[n] = CreateThread (NULL, 0, draw, (void*) n, 0, NULL); //draw is name of function 
+        events[n] = CreateEvent (NULL, FALSE, FALSE, NULL);
+        }
+        
+    //creating semaphores 
+    semsem = CreateSemaphore (NULL, 0, number, NULL);
+
+    
+    //creating window
+    int ret = spawnWindow(hThisInstance, nCmdShow, sizeX, sizeY, 0, "Mandelbrot set", display, onclick);
+    
+    //closing threads
+    for (n = 0; n < number; n++) {
+        TerminateThread (threads[n], 0);
+        CloseHandle (threads[n]);
+        }
+        
+    return ret;
+}

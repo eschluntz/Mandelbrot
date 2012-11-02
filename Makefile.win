@@ -1,0 +1,33 @@
+# Project: Mandelbrot
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = 
+OBJ  = mandelbrot.main.o Graphics.o $(RES)
+LINKOBJ  = mandelbrot.main.o Graphics.o $(RES)
+LIBS =  -L"C:/Dev-Cpp/lib" -lgdi32 -lkernel32  
+INCS =  -I"C:/Dev-Cpp/include" 
+CXXINCS =  -I"C:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/Dev-Cpp/include/c++/3.4.2/backward"  -I"C:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include" 
+BIN  = Mandelbrot.exe
+CXXFLAGS = $(CXXINCS)  
+CFLAGS = $(INCS)  
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before Mandelbrot.exe all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CC) $(LINKOBJ) -o "Mandelbrot.exe" $(LIBS)
+
+mandelbrot.main.o: mandelbrot.main.c
+	$(CC) -c mandelbrot.main.c -o mandelbrot.main.o $(CFLAGS)
+
+Graphics.o: Graphics.c
+	$(CC) -c Graphics.c -o Graphics.o $(CFLAGS)
